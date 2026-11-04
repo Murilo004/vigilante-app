@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funções de apoio ----------
+    function logado() { return request.auth != null; }
+
+    function eu() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+    function minhaComunidade() { return eu().comunidade; }
+    function ehGuarda() { return logado() && eu().papel == 'guarda'; }
+
+    function comunidadeExiste(codigo) {
+      return exists(/databases/$(database)/documents/comunidades/$(codigo));
+    }
+    function souDonoDaComunidade(codigo) {
+      return get(/databases/$(database)/documents/comunidades/$(codigo)).data.guardaId
+        == request.auth.uid;
+    }
+    // Morador: qualquer comunidade que exista. Guarda: só a que é dele.
+    function comunidadeValida(papel, codigo) {
+      return (papel == 'morador' && comunidadeExiste(codigo))
+          || (papel == 'guarda' && souDonoDaComunidade(codigo));
+    }
+
+    function ocorrencia(id) {
+      return get(/databases/$(database)/documents/ocorrencias/$(id)).data;
+    }
+    function donoDa(id) {
+      return logado() && ocorrencia(id).moradorId == request.auth.uid;
+    }
+    function guardaDa(id) {
+      return ehGuarda() && ocorrencia(id).comunidade == minhaComunidade();
+    }
+
+    // ---------- Comunidades ----------
+    // Qualquer um pode conferir UM código (no cadastro), mas não listar todos.
+    match /comunidades/{codigo} {
+      allow get: if true;
+      allow create: if logado()
+        && request.resource.data.guardaId == request.auth.uid;
+      // O guarda pode mudar o próprio nome, mas não passar a comunidade a outro
+      allow update: if logado()
+        && resource.data.guardaId == request.auth.uid
+        && request.resource.data.guardaId == request.auth.uid;
+    }
+
+    // ---------- Usuários ----------
+    match /usuarios/{uid} {
+      // Cada um lê o seu; o guarda lê os moradores da comunidade dele
+      allow read: if logado() && (
+        request.auth.uid == uid ||
+        (ehGuarda() && resource.data.comunidade == minhaComunidade())
+      );
+
+      // Cadastro: papel só pode ser morador ou guarda, com comunidade válida
+      allow create: if logado()
+        && request.auth.uid == uid
+        && request.resource.data.papel in ['morador', 'guarda']
+        && comunidadeValida(request.resource.data.papel, request.resource.data.comunidade);
+
+      // Edição: o papel NUNCA muda; a comunidade só muda para uma válida
+      allow update: if logado()
+        && request.auth.uid == uid
+        && request.resource.data.papel == resource.data.papel
+        && (
+          request.resource.data.get('comunidade', '') == resource.data.get('comunidade', '') ||
+          comunidadeValida(resource.data.papel, request.resource.data.comunidade)
+        );
+    }
+
+    // ---------- Ocorrências ----------
+    match /ocorrencias/{id} {
+      allow read: if logado() && (
+        resource.data.moradorId == request.auth.uid ||
+        (ehGuarda() && resource.data.comunidade == minhaComunidade())
+      );
+      allow create: if logado()
+        && eu().papel == 'morador'
+        && request.resource.data.moradorId == request.auth.uid
+        && request.resource.data.comunidade == minhaComunidade();
+      allow update: if ehGuarda() && resource.data.comunidade == minhaComunidade();
+
+      // Mensagens: só o morador dono e o guarda da comunidade.
+      // Ninguém consegue mandar mensagem em nome de outra pessoa.
+      match /mensagens/{msg} {
+        allow read: if donoDa(id) || guardaDa(id);
+        allow create: if (donoDa(id) || guardaDa(id))
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.remetente in [eu().papel, 'sistema']
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() > 0
+          && request.resource.data.texto.size() <= 500;
+      }
+    }
+
+    // ---------- Alertas do bairro (resumo dentro da comunidade) ----------
+    match /alertas/{id} {
+      allow read: if logado() && resource.data.comunidade == minhaComunidade();
+      allow create: if logado()
+        && request.resource.data.moradorId == request.auth.uid
+        && request.resource.data.comunidade == minhaComunidade();
+      allow update: if ehGuarda() && resource.data.comunidade == minhaComunidade();
+    }
+  }
+}

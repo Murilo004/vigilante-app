@@ -1,0 +1,36 @@
+# =============================================================================
+# Central de Segurança — .gitignore
+#
+# Estratégia: ignora TUDO na raiz e libera só o que é necessário para rodar.
+#
+# Ficam de fora, por exemplo:
+#   build/, .dart_tool/, .flutter-plugins-dependencies  → gerados pelo Flutter
+#   .idea/, *.iml                                        → configurações do editor
+#   .github/modernize/                                   → criado por extensão do VS Code
+#   android/, ios/, windows/, linux/, macos/             → pastas de plataforma
+#
+# As pastas de plataforma podem ser recriadas com:
+#   flutter create --platforms=android .
+# =============================================================================
+
+# 1) Ignora tudo na raiz do projeto...
+/*
+
+# 2) ...menos o necessário para rodar o app
+!/lib/
+!/web/
+!/pubspec.yaml
+!/pubspec.lock
+!/analysis_options.yaml
+!/.metadata
+!/firestore.rules
+!/README.md
+!/.gitignore
+
+# 3) Mesmo dentro das pastas liberadas, ignora lixo do sistema e de editores
+.DS_Store
+Thumbs.db
+desktop.ini
+*.iml
+*.swp
+*.log

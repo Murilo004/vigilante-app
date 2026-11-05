@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     Text(
-                      "Central de Segurança",
+                      "Vigilante",
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                     ),

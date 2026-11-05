@@ -1,4 +1,4 @@
-# 🛡️ Central de Segurança
+# 🛡️ Vigilante
 
 Aplicativo em **Flutter** que conecta a **guarda do bairro** aos **moradores**.
 O morador registra ocorrências ou aciona o botão de pânico. O guarda recebe o

@@ -1,5 +1,5 @@
 # =============================================================================
-# Central de Segurança — .gitignore
+# Vigilante — .gitignore
 #
 # Estratégia: ignora TUDO na raiz e libera só o que é necessário para rodar.
 #

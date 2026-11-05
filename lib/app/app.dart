@@ -24,7 +24,7 @@ class SegurancaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Central de Segurança",
+      title: "Vigilante",
       debugShowCheckedModeBanner: false,
       theme: temaDoApp(),
       initialRoute: Sessao.rotaInicial(),
